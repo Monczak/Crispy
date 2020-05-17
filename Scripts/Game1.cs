@@ -2,12 +2,20 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
+using System.IO;
+
+using Crispy.Scripts.Core;
+
 namespace Crispy
 {
     public class Game1 : Game
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
+
+        private CPU cpu;
+
+        private Texture2D pixel;
 
         public Game1()
         {
@@ -18,7 +26,21 @@ namespace Crispy
 
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
+            _graphics.PreferredBackBufferWidth = 640;
+            _graphics.PreferredBackBufferHeight = 320;
+
+            _graphics.ApplyChanges();
+
+            pixel = new Texture2D(_graphics.GraphicsDevice, 10, 10);
+            Color[] data = new Color[10 * 10];
+            for (int i = 0; i < data.Length; i++) data[i] = Color.White;
+            pixel.SetData(data);
+
+            cpu = new CPU();
+            cpu.Initialize();
+
+            byte[] program = File.ReadAllBytes("Space Invaders [David Winter].ch8");
+            cpu.LoadProgram(program);
 
             base.Initialize();
         }
@@ -35,16 +57,24 @@ namespace Crispy
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            // TODO: Add your update logic here
+            cpu.Cycle();
 
             base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.MonoGameOrange);
+            GraphicsDevice.Clear(Color.Black);
 
-            // TODO: Add your drawing code here
+            _spriteBatch.Begin();
+            for (int y = 0; y < 32; y++)
+            {
+                for (int x = 0; x < 64; x++)
+                {
+                    _spriteBatch.Draw(pixel, new Vector2(x * 10, y * 10), cpu.graphicsMemory[y * 64 + x] ? Color.White : Color.Black);
+                }
+            }
+            _spriteBatch.End();
 
             base.Draw(gameTime);
         }

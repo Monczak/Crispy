@@ -26,7 +26,14 @@ namespace Crispy.Scripts.Core
         public byte delayTimer;         // Generic timer
         public byte soundTimer;         // As long as this timer is above 0, a beep is played
 
-        public bool[] graphicsMemory;
+        public bool[] graphicsMemory;   // Monochrome screen (64x32, 64x64 in hi-res mode)
+
+        public bool superChipMode;      // Some instructions behave differently in some implementations of CHIP-8
+        public bool hiResMode;          // Use a 64x64 screen instead of the usual 64x32
+
+        public bool drawFlag;           // Set whenever to update the screen
+
+        private Random random;
 
         private readonly byte[] fontSet = new byte[80]
         {
@@ -61,9 +68,11 @@ namespace Crispy.Scripts.Core
             indexRegister = 0;          // Reset index register
             stackPointer = 0;           // Reset stack pointer to top of stack
 
-            graphicsMemory = new bool[64 * 32]; // The screen is 64 x 32 pixels
+            graphicsMemory = new bool[64 * (hiResMode ? 64 : 32)]; // The screen is 64x32 pixels (64x64 if in hi-res mode)
 
             soundTimer = delayTimer = 0;
+
+            random = new Random();
 
             // Load fontset
             for (int i = 0; i < 80; i++)
@@ -172,7 +181,7 @@ namespace Crispy.Scripts.Core
                             Opcode_RightShift((byte)((opcode & 0x0F00) >> 8));
                             break;
                         case 0x0007:    // 8XY7
-                            Opcode_SetXY((byte)((opcode & 0x0F00) >> 8), (byte)((opcode & 0x00F0) >> 4));
+                            Opcode_SubtractCarryInverted((byte)((opcode & 0x0F00) >> 8), (byte)((opcode & 0x00F0) >> 4));
                             break;
                         case 0x000E:    // 8XYE
                             Opcode_LeftShift((byte)((opcode & 0x0F00) >> 8));
@@ -265,6 +274,8 @@ namespace Crispy.Scripts.Core
                     ThrowUnknownOpcodeException();
                     break;
             }
+
+            programCounter += 2;
         }
 
         private void ThrowUnknownOpcodeException()
@@ -285,211 +296,314 @@ namespace Crispy.Scripts.Core
         // Call program at address (0x0NNN)
         private void Opcode_Call(ushort address)
         {
-            programCounter = address;
+            programCounter = (ushort)(address - 2);
         }
 
         // Clear the screen (0x00E0)
         private void Opcode_ClearScreen()
         {
-
+            for (int i = 0; i < graphicsMemory.Length; i++)
+                graphicsMemory[i] = false;
         }
 
         // Return from a subroutine (0x00EE)
         private void Opcode_ReturnFromSubroutine()
         {
-
+            stackPointer--;
+            programCounter = stack[stackPointer];
         }
 
         // Jump to address (0x1NNN)
         private void Opcode_JumpToAddress(ushort address)
         {
-
+            programCounter = (ushort)(address - 2);
         }
 
         // Call subroutine at address (0x2NNN)
         private void Opcode_CallSubroutine(ushort address)
         {
-
+            stack[stackPointer] = programCounter;
+            stackPointer++;
+            programCounter = (ushort)(address - 2);
         }
 
         // Skip next instruction if VX = NN (0x3XNN)
         private void Opcode_SkipNextInstructionEqualToValue(byte register, byte value)
         {
-
+            if (registers[register] == value)
+                programCounter += 2;
         }
 
         // Skip next instruction if VX != NN (0x4XNN)
         private void Opcode_SkipNextInstructionNotEqualToValue(byte register, byte value)
         {
-
+            if (registers[register] != value)
+                programCounter += 2;
         }
 
         // Skip next instruction if VX == VY (0x5XY0)
         private void Opcode_SkipNextInstructionXEqualToY(byte registerX, byte registerY)
         {
-
+            if (registers[registerX] == registers[registerY])
+                programCounter += 2;
         }
 
         // Set VX to NN (0x6XNN)
         private void Opcode_Set(byte register, byte value)
         {
-
+            registers[register] = value;
         }
 
         // Add NN to VX (0x7XNN)
         private void Opcode_Add(byte register, byte value)
         {
-
+            registers[register] += value;
         }
 
         // Set VX to VY (0x8XY0)
         private void Opcode_SetXY(byte registerX, byte registerY)
         {
-
+            registers[registerX] = registers[registerY];
         }
 
         // Set VX to VX OR VY (0x8XY1)
         private void Opcode_SetXORY(byte registerX, byte registerY)
         {
-
+            registers[registerX] |= registers[registerY];
         }
 
         // Set VX to VX AND VY (0x8XY2)
         private void Opcode_SetXANDY(byte registerX, byte registerY)
         {
-
+            registers[registerX] &= registers[registerY];
         }
 
         // Set VX to VX XOR VY (0x8XY3)
         private void Opcode_SetXXORY(byte registerX, byte registerY)
         {
-
+            registers[registerX] ^= registers[registerY];
         }
 
         // Add VY to VX with carry (0x8XY4)
         private void Opcode_AddCarry(byte registerX, byte registerY)
         {
+            ushort result = (ushort)(registers[registerX] + registers[registerY]);
 
+            if (result > 0xFF)
+                registers[0xF] = 1;
+            else
+                registers[0xF] = 0;
+
+            registers[registerX] = (byte)(result & 0xFF);
         }
 
         // Subtract VY from VX with carry (0x8XY5)
         private void Opcode_SubtractCarry(byte registerX, byte registerY)
         {
+            if (registers[registerX] > registers[registerY])
+                registers[0xF] = 1;
+            else
+                registers[0xF] = 0;
 
+            registers[registerX] = unchecked((byte)(registers[registerX] - registers[registerY]));
         }
 
         // Right shift VX by 1 (0x8XY6)
+        // Probably behaves differently with SuperChip mode
         private void Opcode_RightShift(byte registerX)
         {
-
+            registers[0xF] = (byte)(registers[registerX] & 0x1);
+            registers[registerX] >>= 1;
         }
 
         // Subtract VX from VY and store result in VX (0x8XY7)
         private void Opcode_SubtractCarryInverted(byte registerX, byte registerY)
         {
+            if (registers[registerX] > registers[registerY])
+                registers[0xF] = 1;
+            else
+                registers[0xF] = 0;
 
+            registers[registerX] = unchecked((byte)(registers[registerY] - registers[registerX]));
         }
 
         // Left shift VX by 1 (0x8XYE)
         private void Opcode_LeftShift(byte registerX)
         {
-
+            registers[0xF] = (byte)((registers[registerX] & 0x80) >> 7);
+            registers[registerX] <<= 1;
         }
 
         // Skip next instruction if VX != VY (0x9XY0)
         private void Opcode_SkipNextInstructionXNotEqualY(byte registerX, byte registerY)
         {
-
+            if (registers[registerX] != registers[registerY])
+                programCounter += 2;
         }
 
         // Set index register to address (0xANNN)
         private void Opcode_SetIndexRegister(ushort address)
         {
-
+            indexRegister = address;
         }
 
         // Jump to address + V0 (0xBNNN)
         private void Opcode_JumpToAddressV0(ushort address)
         {
-
+            programCounter = (ushort)(address + registers[0x0]);
         }
 
         // Set VX to random byte AND NN (0xCXNN)
         private void Opcode_SetRandom(byte register, byte value)
         {
-
+            registers[register] = (byte)((byte)random.Next(0x00, 0xFF) & value);
         }
 
         // Draw sprite at (VX, VY) (width 8, height N) (0xDXYN)
         private void Opcode_Draw(byte registerX, byte registerY, byte height)
         {
+            byte xPos = (byte)(registers[registerX] % 64);
+            byte yPos = (byte)(registers[registerY] % (hiResMode ? 64 : 32));
 
+            registers[0xF] = 0;
+
+            for (byte row = 0; row < height; row++)
+            {
+                byte pixel = memory[indexRegister + row];
+
+                for (byte col = 0; col < 8; col++)
+                {
+                    if ((byte)(pixel & (0x80 >> col)) != 0)
+                    {
+                        if (graphicsMemory[(yPos + row) * 64 + xPos + col])
+                            registers[0xF] = 1;
+
+                        graphicsMemory[(yPos + row) * 64 + xPos + col] ^= true;
+                    }
+                }
+            }
+
+            drawFlag = true;
         }
 
         // Skip next instruction if key with value of VX is pressed (0xEX9E)
         private void Opcode_SkipNextInstructionKeyPressed(byte register)
         {
+            byte key = registers[register];
 
+            if (keypadState[key])
+                programCounter += 2;
         }
 
         // Skip next instruction if key with value of VX is not pressed (0xEXA1)
         private void Opcode_SkipNextInstructionKeyNotPressed(byte register)
         {
+            byte key = registers[register];
 
+            if (!keypadState[key])
+                programCounter += 2;
         }
 
         // Set VX to delay timer (0xFX07)
         private void Opcode_SetXToDelayTimer(byte register)
         {
-
+            registers[register] = delayTimer;
         }
 
         // Wait for a key press, then store the key value in VX (0xFX0A)
         private void Opcode_WaitForKeyPress(byte register)
         {
-
+            if (keypadState[0])
+                registers[register] = 0;
+            else if (keypadState[1])
+                registers[register] = 1;
+            else if (keypadState[2])
+                registers[register] = 2;
+            else if (keypadState[3])
+                registers[register] = 3;
+            else if (keypadState[4])
+                registers[register] = 4;
+            else if (keypadState[5])
+                registers[register] = 5;
+            else if (keypadState[6])
+                registers[register] = 6;
+            else if (keypadState[7])
+                registers[register] = 7;
+            else if (keypadState[8])
+                registers[register] = 8;
+            else if (keypadState[9])
+                registers[register] = 9;
+            else if (keypadState[10])
+                registers[register] = 10;
+            else if (keypadState[11])
+                registers[register] = 11;
+            else if (keypadState[12])
+                registers[register] = 12;
+            else if (keypadState[13])
+                registers[register] = 13;
+            else if (keypadState[14])
+                registers[register] = 14;
+            else if (keypadState[15])
+                registers[register] = 15;
+            else
+                programCounter -= 2;
         }
 
         // Set delay timer to VX (0xFX15)
         private void Opcode_SetDelayTimer(byte register)
         {
-
+            delayTimer = registers[register];
         }
 
         // Set delay timer to VX (0xFX18)
         private void Opcode_SetSoundTimer(byte register)
         {
-
+            soundTimer = registers[register];
         }
 
         // Add VX to index register (0xFX1E)
         private void Opcode_AddXToIndexRegister(byte register)
         {
-
+            indexRegister += registers[register];
         }
 
         // Set index register to location of sprite for digit VX (0xFX29)
         private void Opcode_SetIndexRegisterSprite(byte register)
         {
-
+            byte digit = registers[register];
+            indexRegister = unchecked((ushort)(0x50 + (5 * digit)));
         }
         
         // Store BCD representation of VX in memory locations I, I + 1 and I + 2 (0xFX33)
         private void Opcode_StoreBCD(byte register)
         {
+            byte value = registers[register];
 
+            memory[indexRegister + 2] = unchecked((byte)(value % 10));
+            value /= 10;
+
+            memory[indexRegister + 1] = unchecked((byte)(value % 10));
+            value /= 10;
+
+            memory[indexRegister] = unchecked((byte)(value % 10));
         }
 
         // Store registers V0 to VX in memory, starting at location I (0xFX55)
         private void Opcode_StoreRegisters(byte register)
         {
-
+            for (byte i = 0; i <= register; i++)
+            {
+                memory[indexRegister + i] = registers[i];
+            }
         }
 
         // Read registers V0 through VX from memory, starting at location I (0xFX65)
         private void Opcode_ReadRegisters(byte register)
         {
-
+            for (byte i = 0; i <= register; i++)
+            {
+                registers[i] = memory[indexRegister + i];
+            }
         }
     }
 }
