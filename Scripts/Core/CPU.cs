@@ -93,8 +93,6 @@ namespace Crispy.Scripts.Core
             FetchOpcode();
 
             ExecuteOpcode();
-
-            UpdateTimers();
         }
 
         private void FetchOpcode()
@@ -283,7 +281,7 @@ namespace Crispy.Scripts.Core
             throw new Exception($"Unknown opcode 0x{opcode.ToString("X4")} at 0x{programCounter.ToString("X3")}");
         }
 
-        private void UpdateTimers()
+        public void UpdateTimers()
         {
             if (delayTimer > 0) delayTimer--;
             if (soundTimer > 0) soundTimer--;

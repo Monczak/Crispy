@@ -2,6 +2,8 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
+using System;
+using System.Threading;
 using System.IO;
 
 using Crispy.Scripts.Core;
@@ -59,11 +61,16 @@ namespace Crispy
             for (int i = 0; i < data.Length; i++) data[i] = Color.White;
             pixel.SetData(data);
 
-            TargetElapsedTime = System.TimeSpan.FromSeconds(1f / cyclesPerSecond);
+            TargetElapsedTime = TimeSpan.FromSeconds(1f / cyclesPerSecond);
             IsFixedTimeStep = true;
 
             cpu = new CPU();
             cpu.Initialize();
+
+            Timer timerUpdater = new Timer((e) =>
+            {
+                cpu.UpdateTimers();
+            }, null, TimeSpan.Zero, TimeSpan.FromSeconds(1f / timerUpdatesPerSecond));
 
             byte[] program = File.ReadAllBytes("Space Invaders [David Winter].ch8");
             cpu.LoadProgram(program);
