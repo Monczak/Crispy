@@ -16,11 +16,16 @@ namespace Crispy
         private SpriteBatch _spriteBatch;
 
         private CPU cpu;
+        private APU apu;
 
         private Texture2D pixel;
 
+        private Color onColor, offColor;
+
         private uint cyclesPerSecond = 500;
         private uint timerUpdatesPerSecond = 60;
+
+        private double timeSinceLastTimerUpdate;
 
         public CrispyEmu()
         {
@@ -35,6 +40,9 @@ namespace Crispy
             _graphics.PreferredBackBufferHeight = 320;
 
             _graphics.ApplyChanges();
+
+            offColor = new Color(186, 194, 172);
+            onColor = new Color(65, 66, 52);
 
             InputHandler.SetBindings(new System.Collections.Generic.Dictionary<int, Keys>
             {
@@ -65,14 +73,13 @@ namespace Crispy
             IsFixedTimeStep = true;
 
             cpu = new CPU();
+            cpu.hiResMode = true;
             cpu.Initialize();
 
-            Timer timerUpdater = new Timer((e) =>
-            {
-                cpu.UpdateTimers();
-            }, null, TimeSpan.Zero, TimeSpan.FromSeconds(1f / timerUpdatesPerSecond));
+            apu = new APU();
+            apu.Initialize();
 
-            byte[] program = File.ReadAllBytes("Space Invaders [David Winter].ch8");
+            byte[] program = File.ReadAllBytes("Brix [Andreas Gustafsson, 1990].ch8");
             cpu.LoadProgram(program);
 
             base.Initialize();
@@ -94,19 +101,29 @@ namespace Crispy
 
             cpu.Cycle();
 
+            if (timeSinceLastTimerUpdate > 1.0 / timerUpdatesPerSecond)
+            {
+                timeSinceLastTimerUpdate = 0;
+                cpu.UpdateTimers();
+            }
+            else timeSinceLastTimerUpdate += gameTime.ElapsedGameTime.TotalSeconds;
+
+            if (cpu.soundTimer > 0) apu.StartTone();
+            else apu.StopTone();
+
             base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.Black);
+            GraphicsDevice.Clear(offColor);
 
             _spriteBatch.Begin();
             for (int y = 0; y < 32; y++)
             {
                 for (int x = 0; x < 64; x++)
                 {
-                    _spriteBatch.Draw(pixel, new Vector2(x * 10, y * 10), cpu.graphicsMemory[y * 64 + x] ? Color.White : Color.Black);
+                    _spriteBatch.Draw(pixel, new Vector2(x * 10, y * 10), cpu.graphicsMemory[y * 64 + x] ? onColor : offColor);
                 }
             }
             _spriteBatch.End();

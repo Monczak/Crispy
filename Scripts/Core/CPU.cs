@@ -58,7 +58,7 @@ namespace Crispy.Scripts.Core
         public void Initialize()
         {
             registers = new byte[16];
-            stack = new ushort[16];
+            stack = new ushort[16];         // The stack only stores pointers to subroutines, allows for 16 levels of nesting
             memory = new byte[memorySize];
 
             keypadState = new bool[16] { false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
@@ -385,7 +385,7 @@ namespace Crispy.Scripts.Core
         // Add VY to VX with carry (0x8XY4)
         private void Opcode_AddCarry(byte registerX, byte registerY)
         {
-            ushort result = (ushort)(registers[registerX] + registers[registerY]);
+            ushort result = unchecked((ushort)(registers[registerX] + registers[registerY]));
 
             if (result > 0xFF)
                 registers[0xF] = 1;
