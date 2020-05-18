@@ -8,7 +8,7 @@ using Crispy.Scripts.Core;
 
 namespace Crispy
 {
-    public class Game1 : Game
+    public class CrispyEmu : Game
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
@@ -17,7 +17,10 @@ namespace Crispy
 
         private Texture2D pixel;
 
-        public Game1()
+        private uint cyclesPerSecond = 500;
+        private uint timerUpdatesPerSecond = 60;
+
+        public CrispyEmu()
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
@@ -31,10 +34,33 @@ namespace Crispy
 
             _graphics.ApplyChanges();
 
+            InputHandler.SetBindings(new System.Collections.Generic.Dictionary<int, Keys>
+            {
+                { 0, Keys.X },
+                { 1, Keys.D1 },
+                { 2, Keys.D2 },
+                { 3, Keys.D3 },
+                { 4, Keys.Q },
+                { 5, Keys.W },
+                { 6, Keys.E },
+                { 7, Keys.A },
+                { 8, Keys.S },
+                { 9, Keys.D },
+                { 10, Keys.Z },
+                { 11, Keys.C },
+                { 12, Keys.D4 },
+                { 13, Keys.R },
+                { 14, Keys.F },
+                { 15, Keys.V }
+            });
+
             pixel = new Texture2D(_graphics.GraphicsDevice, 10, 10);
             Color[] data = new Color[10 * 10];
             for (int i = 0; i < data.Length; i++) data[i] = Color.White;
             pixel.SetData(data);
+
+            TargetElapsedTime = System.TimeSpan.FromSeconds(1f / cyclesPerSecond);
+            IsFixedTimeStep = true;
 
             cpu = new CPU();
             cpu.Initialize();
@@ -57,6 +83,8 @@ namespace Crispy
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
+            cpu.keypadState = InputHandler.GetKeyboardState(Keyboard.GetState());
+
             cpu.Cycle();
 
             base.Update(gameTime);
@@ -75,6 +103,8 @@ namespace Crispy
                 }
             }
             _spriteBatch.End();
+
+            cpu.drawFlag = false;
 
             base.Draw(gameTime);
         }
