@@ -75,8 +75,8 @@ namespace Crispy.Scripts.Core
             random = new Random();
 
             // Load fontset
-            for (int i = 0; i < 80; i++)
-                memory[i] = fontSet[i];
+            for (int i = 80; i < 160; i++)
+                memory[i] = fontSet[i - 80];
         }
 
         public void LoadProgram(byte[] program)
@@ -98,6 +98,8 @@ namespace Crispy.Scripts.Core
         private void FetchOpcode()
         {
             opcode = (ushort)(memory[programCounter] << 8 | memory[programCounter + 1]);
+
+            programCounter += 2;
         }
 
         private void ExecuteOpcode()
@@ -272,8 +274,6 @@ namespace Crispy.Scripts.Core
                     ThrowUnknownOpcodeException();
                     break;
             }
-
-            programCounter += 2;
         }
 
         private void ThrowUnknownOpcodeException()
@@ -294,7 +294,7 @@ namespace Crispy.Scripts.Core
         // Call program at address (0x0NNN)
         private void Opcode_Call(ushort address)
         {
-            programCounter = (ushort)(address - 2);
+            programCounter = address;
         }
 
         // Clear the screen (0x00E0)
@@ -314,7 +314,7 @@ namespace Crispy.Scripts.Core
         // Jump to address (0x1NNN)
         private void Opcode_JumpToAddress(ushort address)
         {
-            programCounter = (ushort)(address - 2);
+            programCounter = address;
         }
 
         // Call subroutine at address (0x2NNN)
@@ -322,7 +322,7 @@ namespace Crispy.Scripts.Core
         {
             stack[stackPointer] = programCounter;
             stackPointer++;
-            programCounter = (ushort)(address - 2);
+            programCounter = address;
         }
 
         // Skip next instruction if VX = NN (0x3XNN)

@@ -79,7 +79,7 @@ namespace Crispy
             apu = new APU();
             apu.Initialize();
 
-            byte[] program = File.ReadAllBytes("Brix [Andreas Gustafsson, 1990].ch8");
+            byte[] program = File.ReadAllBytes("Keypad Test [Hap, 2006].ch8");
             cpu.LoadProgram(program);
 
             base.Initialize();

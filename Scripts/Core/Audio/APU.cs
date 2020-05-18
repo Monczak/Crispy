@@ -5,8 +5,6 @@ using System.Threading;
 
 using NAudio;
 using NAudio.Wave;
-
-using Crispy.Scripts.Core.Audio;
 using NAudio.Wave.SampleProviders;
 
 namespace Crispy.Scripts.Core
