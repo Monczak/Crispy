@@ -287,6 +287,57 @@ namespace Crispy.Scripts.Core
             if (soundTimer > 0) soundTimer--;
         }
 
+        public void ApplyState(CPUState state)
+        {
+            state.memory.CopyTo(memory, 0);
+            state.registers.CopyTo(registers, 0);
+            state.graphicsMemory.CopyTo(graphicsMemory, 0);
+            state.stack.CopyTo(stack, 0);
+            state.keypadState.CopyTo(keypadState, 0);
+
+            opcode = state.opcode;
+            programCounter = state.programCounter;
+            indexRegister = state.indexRegister;
+            stackPointer = state.stackPointer;
+            delayTimer = state.delayTimer;
+            soundTimer = state.soundTimer;
+            superChipMode = state.superChipMode;
+            hiResMode = state.hiResMode;
+            drawFlag = state.drawFlag;
+            random = state.random;
+        }
+
+        public CPUState GetState()
+        {
+            CPUState state = new CPUState()
+            {
+                memory = new byte[memorySize],
+                registers = new byte[16],
+                graphicsMemory = new bool[64 * (hiResMode ? 64 : 32)],
+                stack = new ushort[16],
+                keypadState = new bool[16],
+
+                opcode = opcode,
+                programCounter = programCounter,
+                indexRegister = indexRegister,
+                stackPointer = stackPointer,
+                delayTimer = delayTimer,
+                soundTimer = soundTimer,
+                superChipMode = superChipMode,
+                hiResMode = hiResMode,
+                drawFlag = drawFlag,
+                random = random
+            };
+
+            memory.CopyTo(state.memory, 0);
+            registers.CopyTo(state.registers, 0);
+            graphicsMemory.CopyTo(state.graphicsMemory, 0);
+            stack.CopyTo(state.stack, 0);
+            keypadState.CopyTo(state.keypadState, 0);
+
+            return state;
+        }
+
         // --------
         // Opcodes
         // --------

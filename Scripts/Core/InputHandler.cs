@@ -10,6 +10,9 @@ namespace Crispy.Scripts.Core
     {
         public static Dictionary<int, Keys> bindings;
 
+        public static bool heldSavestateKey = false;
+        public static bool heldLoadstateKey = false;
+
         public static void SetBindings(Dictionary<int, Keys> newBindings)
         {
             bindings = newBindings;

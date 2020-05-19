@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Threading;
 using System.IO;
+using System.Diagnostics;
 
 using Crispy.Scripts.Core;
 
@@ -26,6 +27,8 @@ namespace Crispy
         private uint timerUpdatesPerSecond = 60;
 
         private double timeSinceLastTimerUpdate;
+
+        CPUState saveState;
 
         public CrispyEmu()
         {
@@ -79,7 +82,7 @@ namespace Crispy
             apu = new APU();
             apu.Initialize();
 
-            byte[] program = File.ReadAllBytes("Keypad Test [Hap, 2006].ch8");
+            byte[] program = File.ReadAllBytes("Space Invaders [David Winter].ch8");
             cpu.LoadProgram(program);
 
             base.Initialize();
@@ -101,17 +104,27 @@ namespace Crispy
 
             cpu.Cycle();
 
+            HandleTimers(gameTime);
+            HandleAudio();
+            HandleSavestates();
+
+            base.Update(gameTime);
+        }
+
+        private void HandleTimers(GameTime gameTime)
+        {
             if (timeSinceLastTimerUpdate > 1.0 / timerUpdatesPerSecond)
             {
                 timeSinceLastTimerUpdate = 0;
                 cpu.UpdateTimers();
             }
             else timeSinceLastTimerUpdate += gameTime.ElapsedGameTime.TotalSeconds;
+        }
 
+        private void HandleAudio()
+        {
             if (cpu.soundTimer > 0) apu.StartTone();
             else apu.StopTone();
-
-            base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
@@ -131,6 +144,30 @@ namespace Crispy
             cpu.drawFlag = false;
 
             base.Draw(gameTime);
+        }
+
+
+        private void HandleSavestates()
+        {
+            if (Keyboard.GetState().IsKeyDown(Keys.T) && !InputHandler.heldSavestateKey)
+            {
+                saveState = cpu.GetState();
+                InputHandler.heldSavestateKey = true;
+            }
+            else if (Keyboard.GetState().IsKeyUp(Keys.T))
+            {
+                InputHandler.heldSavestateKey = false;
+            }
+
+            if (Keyboard.GetState().IsKeyDown(Keys.Y) && !InputHandler.heldLoadstateKey)
+            {
+                cpu.ApplyState(saveState);
+                InputHandler.heldLoadstateKey = true;
+            }
+            else if (Keyboard.GetState().IsKeyUp(Keys.Y))
+            {
+                InputHandler.heldLoadstateKey = false;
+            }
         }
     }
 }
