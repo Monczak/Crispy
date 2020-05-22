@@ -31,12 +31,14 @@ namespace Crispy
 
         private double timeSinceLastTimerUpdate;
 
-        CPUState saveState;
+        private CPUState saveState;
 
-        List<Message> messages;
+        private List<Message> messages;
 
         private SpriteFont messageFont;
         private int messageHeight = 20;
+
+        private bool isPaused;
 
         public CrispyEmu()
         {
@@ -56,6 +58,8 @@ namespace Crispy
 
             offColor = new Color(186, 194, 172);
             onColor = new Color(65, 66, 52);
+
+            isPaused = false;
 
             InputHandler.SetBindings(new Dictionary<int, Keys>
             {
@@ -112,12 +116,13 @@ namespace Crispy
 
             cpu.keypadState = InputHandler.GetKeyboardState(Keyboard.GetState());
 
-            cpu.Cycle();
+            if (!isPaused) cpu.Cycle();
 
             HandleTimers(gameTime);
             HandleAudio();
             HandleSavestates();
             HandleMessages(gameTime);
+            HandlePause();
 
             base.Update(gameTime);
         }
@@ -197,6 +202,20 @@ namespace Crispy
             else if (Keyboard.GetState().IsKeyUp(Keys.Y))
             {
                 InputHandler.heldLoadstateKey = false;
+            }
+        }
+
+        private void HandlePause()
+        {
+            if (Keyboard.GetState().IsKeyDown(Keys.Space) && !InputHandler.heldPauseKey)
+            {
+                InputHandler.heldPauseKey = true;
+                isPaused ^= true;
+                ShowMessage(isPaused ? "Paused emulation" : "Unpaused emulation", 2.5f);
+            }
+            else if (Keyboard.GetState().IsKeyUp(Keys.Space))
+            {
+                InputHandler.heldPauseKey = false;
             }
         }
 

@@ -12,6 +12,7 @@ namespace Crispy.Scripts.Core
 
         public static bool heldSavestateKey = false;
         public static bool heldLoadstateKey = false;
+        public static bool heldPauseKey = false;
 
         public static void SetBindings(Dictionary<int, Keys> newBindings)
         {
