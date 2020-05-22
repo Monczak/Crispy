@@ -6,8 +6,11 @@ using System;
 using System.Threading;
 using System.IO;
 using System.Diagnostics;
+using System.Collections;
+using System.Collections.Generic;
 
 using Crispy.Scripts.Core;
+using Crispy.Scripts.GUI;
 
 namespace Crispy
 {
@@ -30,6 +33,11 @@ namespace Crispy
 
         CPUState saveState;
 
+        List<Message> messages;
+
+        private SpriteFont messageFont;
+        private int messageHeight = 20;
+
         public CrispyEmu()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -39,6 +47,8 @@ namespace Crispy
 
         protected override void Initialize()
         {
+            messages = new List<Message>();
+
             _graphics.PreferredBackBufferWidth = 640;
             _graphics.PreferredBackBufferHeight = 320;
 
@@ -47,7 +57,7 @@ namespace Crispy
             offColor = new Color(186, 194, 172);
             onColor = new Color(65, 66, 52);
 
-            InputHandler.SetBindings(new System.Collections.Generic.Dictionary<int, Keys>
+            InputHandler.SetBindings(new Dictionary<int, Keys>
             {
                 { 0, Keys.X },
                 { 1, Keys.D1 },
@@ -82,7 +92,7 @@ namespace Crispy
             apu = new APU();
             apu.Initialize();
 
-            byte[] program = File.ReadAllBytes("Space Invaders [David Winter].ch8");
+            byte[] program = File.ReadAllBytes("Tetris [Fran Dachille, 1991].ch8");
             cpu.LoadProgram(program);
 
             base.Initialize();
@@ -92,7 +102,7 @@ namespace Crispy
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // TODO: use this.Content to load your game content here
+            messageFont = Content.Load<SpriteFont>("MessageFont");
         }
 
         protected override void Update(GameTime gameTime)
@@ -107,6 +117,7 @@ namespace Crispy
             HandleTimers(gameTime);
             HandleAudio();
             HandleSavestates();
+            HandleMessages(gameTime);
 
             base.Update(gameTime);
         }
@@ -132,6 +143,19 @@ namespace Crispy
             GraphicsDevice.Clear(offColor);
 
             _spriteBatch.Begin();
+
+            RenderCHIP8();
+            RenderMessages();
+
+            _spriteBatch.End();
+
+            cpu.drawFlag = false;
+
+            base.Draw(gameTime);
+        }
+
+        private void RenderCHIP8()
+        {
             for (int y = 0; y < 32; y++)
             {
                 for (int x = 0; x < 64; x++)
@@ -139,11 +163,15 @@ namespace Crispy
                     _spriteBatch.Draw(pixel, new Vector2(x * 10, y * 10), cpu.graphicsMemory[y * 64 + x] ? onColor : offColor);
                 }
             }
-            _spriteBatch.End();
+        }
 
-            cpu.drawFlag = false;
-
-            base.Draw(gameTime);
+        private void RenderMessages()
+        {
+            int messageIndex = 0;
+            for (int y = _graphics.PreferredBackBufferHeight; y > 0 && messageIndex < messages.Count; y -= messageHeight, messageIndex++)
+            {
+                _spriteBatch.DrawString(messageFont, messages[messages.Count - messageIndex - 1].text, new Vector2(10, y - messageHeight), Color.White);
+            }
         }
 
 
@@ -153,6 +181,7 @@ namespace Crispy
             {
                 saveState = cpu.GetState();
                 InputHandler.heldSavestateKey = true;
+                ShowMessage("Saved state", 2.5f);
             }
             else if (Keyboard.GetState().IsKeyUp(Keys.T))
             {
@@ -163,11 +192,43 @@ namespace Crispy
             {
                 cpu.ApplyState(saveState);
                 InputHandler.heldLoadstateKey = true;
+                ShowMessage("Loaded state", 2.5f);
             }
             else if (Keyboard.GetState().IsKeyUp(Keys.Y))
             {
                 InputHandler.heldLoadstateKey = false;
             }
+        }
+
+        private void HandleMessages(GameTime gameTime)
+        {
+            for (int i = 0; i < messages.Count; i++)
+            {
+                messages[i].showTime -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+                if (messages[i].showTime < 0)
+                    messages.RemoveAt(i--);
+            }
+        }
+
+        private void ShowMessage(string message, float showTime, Color color)
+        {
+            messages.Add(new Message()
+            {
+                text = message,
+                showTime = showTime,
+                color = color
+            });
+        }
+
+        private void ShowMessage(string message, float showTime)
+        {
+            messages.Add(new Message()
+            {
+                text = message,
+                showTime = showTime,
+                color = Color.White
+            });
         }
     }
 }

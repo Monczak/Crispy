@@ -34,6 +34,7 @@
   <ItemGroup>
     <PackageReference Include="MonoGame.Framework.DesktopGL.Core" Version="3.8.*" />
     <PackageReference Include="MonoGame.Content.Builder" Version="3.7.*" />
+    <PackageReference Include="Myra" Version="0.9.9.202" />
     <PackageReference Include="NAudio" Version="1.10.0" />
   </ItemGroup>
 
