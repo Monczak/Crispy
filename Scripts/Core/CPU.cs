@@ -55,7 +55,7 @@ namespace Crispy.Scripts.Core
             0xF0, 0x80, 0xF0, 0x80, 0x80  // F
         };
 
-        public void Initialize()
+        public void Reset()
         {
             registers = new byte[16];
             stack = new ushort[16];         // The stack only stores pointers to subroutines, allows for 16 levels of nesting

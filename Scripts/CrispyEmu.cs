@@ -12,6 +12,10 @@ using System.Collections.Generic;
 using Crispy.Scripts.Core;
 using Crispy.Scripts.GUI;
 
+using Myra;
+using Myra.Graphics2D.UI;
+using Myra.Graphics2D.UI.File;
+
 namespace Crispy
 {
     public class CrispyEmu : Game
@@ -39,6 +43,9 @@ namespace Crispy
         private int messageHeight = 20;
 
         private bool isPaused;
+        private bool isRunning;
+
+        private string currentRomPath;
 
         private readonly Keys
             helpKey = Keys.F1,
@@ -59,6 +66,8 @@ namespace Crispy
 
         protected override void Initialize()
         {
+            MyraEnvironment.Game = this;
+
             messages = new List<Message>();
 
             _graphics.PreferredBackBufferWidth = 640;
@@ -70,6 +79,7 @@ namespace Crispy
             onColor = new Color(65, 66, 52);
 
             isPaused = false;
+            isRunning = false;
 
             InputHandler.SetBindings(new Dictionary<int, Keys>
             {
@@ -101,13 +111,10 @@ namespace Crispy
 
             cpu = new CPU();
             cpu.hiResMode = true;
-            cpu.Initialize();
+            cpu.Reset();
 
             apu = new APU();
             apu.Initialize();
-
-            byte[] program = File.ReadAllBytes("Tetris [Fran Dachille, 1991].ch8");
-            cpu.LoadProgram(program);
 
             base.Initialize();
         }
@@ -126,9 +133,15 @@ namespace Crispy
 
             cpu.keypadState = InputHandler.GetKeyboardState(Keyboard.GetState());
 
-            if (!isPaused) cpu.Cycle();
+            if (isRunning)
+            {
+                if (!isPaused)
+                {
+                    cpu.Cycle();
+                    HandleTimers(gameTime);
+                }
+            }
 
-            HandleTimers(gameTime);
             HandleAudio();
             HandleSavestates();
             HandleMessages(gameTime);
@@ -141,7 +154,31 @@ namespace Crispy
 
         private void HandleFunctionKeys()
         {
+            InputHandler.HandleKeypress(loadRomKey, () =>
+            {
+                FileDialog dialog = new FileDialog(FileDialogMode.OpenFile)
+                {
+                    Filter = "*.ch8"
+                };
 
+                dialog.Closed += (s, a) =>
+                {
+                    isPaused = false;
+                    if (!dialog.Result) return;
+
+                    currentRomPath = dialog.FilePath;
+
+                    cpu.Reset();
+
+                    byte[] program = File.ReadAllBytes(currentRomPath);
+                    cpu.LoadProgram(program);
+
+                    isRunning = true;
+                };
+                isPaused = true;
+
+                dialog.ShowModal();
+            });
         }
 
         private void HandleTimers(GameTime gameTime)
@@ -170,6 +207,8 @@ namespace Crispy
             RenderMessages();
 
             _spriteBatch.End();
+
+            Desktop.Render();
 
             cpu.drawFlag = false;
 
@@ -215,9 +254,14 @@ namespace Crispy
         {
             InputHandler.HandleKeypress(pauseKey, () =>
             {
-                isPaused ^= true;
+                TogglePause();
                 ShowMessage(isPaused ? "Paused emulation" : "Unpaused emulation", 2.5f);
             });
+        }
+
+        private void TogglePause()
+        {
+            isPaused ^= true;
         }
 
         private void HandleMessages(GameTime gameTime)
