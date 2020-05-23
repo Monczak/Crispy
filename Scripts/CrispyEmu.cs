@@ -46,11 +46,19 @@ namespace Crispy
         private bool isRunning;
 
         private string currentRomPath;
+        private string currentRomName;
+        private byte[] currentRom;
+
+        private bool fileDialogVisible = false;
+        private FileDialog fileDialog;
+
+        private int savestateSlots = 6;
 
         private readonly Keys
             helpKey = Keys.F1,
             screenshotKey = Keys.F2,
             loadRomKey = Keys.F3,
+            resetKey = Keys.F4,
             previousSaveStateSlotKey = Keys.F5,
             nextSaveStateSlotKey = Keys.F6,
             loadStateKey = Keys.F7,
@@ -116,6 +124,10 @@ namespace Crispy
             apu = new APU();
             apu.Initialize();
 
+            SavestateManager.Initialize(savestateSlots);
+
+            ShowMessage("Welcome to Crispy! Press F3 to load a game.", 9999);
+
             base.Initialize();
         }
 
@@ -140,61 +152,16 @@ namespace Crispy
                     cpu.Cycle();
                     HandleTimers(gameTime);
                 }
-            }
 
-            HandleAudio();
-            HandleSavestates();
-            HandleMessages(gameTime);
-            HandlePause();
+                HandleAudio();
+                HandleSavestates();
+                HandlePause();
+            }
 
             HandleFunctionKeys();
+            HandleMessages(gameTime);
 
             base.Update(gameTime);
-        }
-
-        private void HandleFunctionKeys()
-        {
-            InputHandler.HandleKeypress(loadRomKey, () =>
-            {
-                FileDialog dialog = new FileDialog(FileDialogMode.OpenFile)
-                {
-                    Filter = "*.ch8"
-                };
-
-                dialog.Closed += (s, a) =>
-                {
-                    isPaused = false;
-                    if (!dialog.Result) return;
-
-                    currentRomPath = dialog.FilePath;
-
-                    cpu.Reset();
-
-                    byte[] program = File.ReadAllBytes(currentRomPath);
-                    cpu.LoadProgram(program);
-
-                    isRunning = true;
-                };
-                isPaused = true;
-
-                dialog.ShowModal();
-            });
-        }
-
-        private void HandleTimers(GameTime gameTime)
-        {
-            if (timeSinceLastTimerUpdate > 1.0 / timerUpdatesPerSecond)
-            {
-                timeSinceLastTimerUpdate = 0;
-                cpu.UpdateTimers();
-            }
-            else timeSinceLastTimerUpdate += gameTime.ElapsedGameTime.TotalSeconds;
-        }
-
-        private void HandleAudio()
-        {
-            if (cpu.soundTimer > 0) apu.StartTone();
-            else apu.StopTone();
         }
 
         protected override void Draw(GameTime gameTime)
@@ -213,6 +180,91 @@ namespace Crispy
             cpu.drawFlag = false;
 
             base.Draw(gameTime);
+        }
+
+        private void HandleFunctionKeys()
+        {
+            InputHandler.HandleKeypress(loadRomKey, () =>
+            {
+                if (!fileDialogVisible)
+                {
+                    fileDialog = new FileDialog(FileDialogMode.OpenFile)
+                    {
+                        Filter = "*.ch8"
+                    };
+
+                    fileDialog.Closed += (s, a) =>
+                    {
+                        isPaused = false;
+                        fileDialogVisible = false;
+                        if (!fileDialog.Result) return;
+
+                        currentRomPath = fileDialog.FilePath;
+
+                        cpu.Reset();
+
+                        currentRom = File.ReadAllBytes(currentRomPath);
+                        currentRomName = Path.GetFileNameWithoutExtension(currentRomPath);
+                        SavestateManager.romName = currentRomName;
+                        cpu.LoadProgram(currentRom);
+
+                        isRunning = true;
+                        RemoveAllMessages();
+                    };
+                    isPaused = true;
+
+                    fileDialog.ShowModal();
+                    fileDialogVisible = true;
+                }
+                else
+                {
+                    fileDialog.Close();
+                }
+                
+            });
+
+            InputHandler.HandleKeypress(resetKey, () => 
+            {
+                if (isRunning)
+                {
+                    cpu.Reset();
+                    cpu.LoadProgram(currentRom);
+                    ShowMessage("Reset", 2.5f);
+                }
+            });
+
+            InputHandler.HandleKeypress(nextSaveStateSlotKey, () =>
+            {
+                if (isRunning)
+                {
+                    SavestateManager.SelectNextSlot();
+                    ShowMessage($"Selected slot {SavestateManager.selectedSlot} {(SavestateManager.IsSelectedSlotEmpty() ? "(empty)" : "")}", 2.5f);
+                }
+            });
+            InputHandler.HandleKeypress(previousSaveStateSlotKey, () =>
+            {
+                if (isRunning)
+                {
+                    SavestateManager.SelectPreviousSlot();
+                    ShowMessage($"Selected slot {SavestateManager.selectedSlot} {(SavestateManager.IsSelectedSlotEmpty() ? "(empty)" : "")}", 2.5f);
+                }
+            });
+        }
+
+        private void HandleTimers(GameTime gameTime)
+        {
+            if (timeSinceLastTimerUpdate > 1.0 / timerUpdatesPerSecond)
+            {
+                timeSinceLastTimerUpdate = 0;
+                cpu.UpdateTimers();
+            }
+            else timeSinceLastTimerUpdate += gameTime.ElapsedGameTime.TotalSeconds;
+        }
+
+        private void HandleAudio()
+        {
+            if (cpu.soundTimer > 0) apu.StartTone();
+            else apu.StopTone();
         }
 
         private void RenderCHIP8()
@@ -237,16 +289,29 @@ namespace Crispy
 
         private void HandleSavestates()
         {
-            InputHandler.HandleKeypress(saveStateKey, () => 
+            InputHandler.HandleKeypress(saveStateKey, () =>
             {
-                saveState = cpu.GetState();
-                ShowMessage("Saved state", 2.5f);
+                if (isRunning)
+                {
+                    SavestateManager.Savestate(SavestateManager.selectedSlot, cpu.GetState());
+                    ShowMessage($"Saved state to slot {SavestateManager.selectedSlot}", 2.5f);
+                }
             });
-
             InputHandler.HandleKeypress(loadStateKey, () =>
             {
-                cpu.ApplyState(saveState);
-                ShowMessage("Loaded state", 2.5f);
+                if (isRunning)
+                {
+                    try
+                    {
+                        SavestateManager.LoadSavestate(SavestateManager.selectedSlot);
+                        cpu.ApplyState(SavestateManager.GetSelectedState());
+                        ShowMessage($"Loaded state from slot {SavestateManager.selectedSlot}", 2.5f);
+                    }
+                    catch (SlotIsEmptyException)
+                    {
+                        ShowMessage($"Slot {SavestateManager.selectedSlot} is empty", 2.5f);
+                    }
+                }
             });
         }
 
@@ -293,6 +358,11 @@ namespace Crispy
                 showTime = showTime,
                 color = Color.White
             });
+        }
+
+        private void RemoveAllMessages()
+        {
+            messages.Clear();
         }
     }
 }

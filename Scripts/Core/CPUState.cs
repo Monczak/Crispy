@@ -4,6 +4,7 @@ using System.Text;
 
 namespace Crispy.Scripts.Core
 {
+    [Serializable]
     public struct CPUState
     {
         public byte[] memory;           // 4K RAM
@@ -28,7 +29,5 @@ namespace Crispy.Scripts.Core
         public bool hiResMode;          // Use a 64x64 screen instead of the usual 64x32
 
         public bool drawFlag;           // Set whenever to update the screen
-
-        public Random random;
     }
 }

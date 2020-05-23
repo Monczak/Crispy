@@ -13,18 +13,37 @@ namespace Crispy.Scripts.Core
 
         public void Serialize(string path)
         {
+            if (!File.Exists(path))
+            {
+                try
+                {
+                    File.Create(path).Dispose();
+                }
+                catch (DirectoryNotFoundException)
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(path));
+                }
+            }
             FileStream stream = File.OpenWrite(path);
             BinaryFormatter bf = new BinaryFormatter();
             bf.Serialize(stream, state);
             stream.Close();
         }
 
-        public void Deserialize(string path)
+        public bool Deserialize(string path)
         {
-            FileStream stream = File.OpenWrite(path);
-            BinaryFormatter bf = new BinaryFormatter();
-            state = (CPUState)bf.Deserialize(stream);
-            stream.Close();
+            if (File.Exists(path))
+            {
+                FileStream stream = File.OpenRead(path);
+                BinaryFormatter bf = new BinaryFormatter();
+                state = (CPUState)bf.Deserialize(stream);
+                stream.Close();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 }

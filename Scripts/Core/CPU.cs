@@ -304,7 +304,6 @@ namespace Crispy.Scripts.Core
             superChipMode = state.superChipMode;
             hiResMode = state.hiResMode;
             drawFlag = state.drawFlag;
-            random = state.random;
         }
 
         public CPUState GetState()
@@ -325,8 +324,7 @@ namespace Crispy.Scripts.Core
                 soundTimer = soundTimer,
                 superChipMode = superChipMode,
                 hiResMode = hiResMode,
-                drawFlag = drawFlag,
-                random = random
+                drawFlag = drawFlag
             };
 
             memory.CopyTo(state.memory, 0);
