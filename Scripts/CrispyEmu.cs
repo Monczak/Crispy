@@ -40,6 +40,16 @@ namespace Crispy
 
         private bool isPaused;
 
+        private readonly Keys
+            helpKey = Keys.F1,
+            screenshotKey = Keys.F2,
+            loadRomKey = Keys.F3,
+            previousSaveStateSlotKey = Keys.F5,
+            nextSaveStateSlotKey = Keys.F6,
+            loadStateKey = Keys.F7,
+            saveStateKey = Keys.F8,
+            pauseKey = Keys.Space;
+
         public CrispyEmu()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -124,7 +134,14 @@ namespace Crispy
             HandleMessages(gameTime);
             HandlePause();
 
+            HandleFunctionKeys();
+
             base.Update(gameTime);
+        }
+
+        private void HandleFunctionKeys()
+        {
+
         }
 
         private void HandleTimers(GameTime gameTime)
@@ -179,44 +196,28 @@ namespace Crispy
             }
         }
 
-
         private void HandleSavestates()
         {
-            if (Keyboard.GetState().IsKeyDown(Keys.T) && !InputHandler.heldSavestateKey)
+            InputHandler.HandleKeypress(saveStateKey, () => 
             {
                 saveState = cpu.GetState();
-                InputHandler.heldSavestateKey = true;
                 ShowMessage("Saved state", 2.5f);
-            }
-            else if (Keyboard.GetState().IsKeyUp(Keys.T))
-            {
-                InputHandler.heldSavestateKey = false;
-            }
+            });
 
-            if (Keyboard.GetState().IsKeyDown(Keys.Y) && !InputHandler.heldLoadstateKey)
+            InputHandler.HandleKeypress(loadStateKey, () =>
             {
                 cpu.ApplyState(saveState);
-                InputHandler.heldLoadstateKey = true;
                 ShowMessage("Loaded state", 2.5f);
-            }
-            else if (Keyboard.GetState().IsKeyUp(Keys.Y))
-            {
-                InputHandler.heldLoadstateKey = false;
-            }
+            });
         }
 
         private void HandlePause()
         {
-            if (Keyboard.GetState().IsKeyDown(Keys.Space) && !InputHandler.heldPauseKey)
+            InputHandler.HandleKeypress(pauseKey, () =>
             {
-                InputHandler.heldPauseKey = true;
                 isPaused ^= true;
                 ShowMessage(isPaused ? "Paused emulation" : "Unpaused emulation", 2.5f);
-            }
-            else if (Keyboard.GetState().IsKeyUp(Keys.Space))
-            {
-                InputHandler.heldPauseKey = false;
-            }
+            });
         }
 
         private void HandleMessages(GameTime gameTime)

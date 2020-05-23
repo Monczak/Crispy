@@ -9,14 +9,12 @@ namespace Crispy.Scripts.Core
     public class InputHandler
     {
         public static Dictionary<int, Keys> bindings;
-
-        public static bool heldSavestateKey = false;
-        public static bool heldLoadstateKey = false;
-        public static bool heldPauseKey = false;
+        public static Dictionary<Keys, bool> heldKeys;
 
         public static void SetBindings(Dictionary<int, Keys> newBindings)
         {
             bindings = newBindings;
+            heldKeys = new Dictionary<Keys, bool>();
         }
 
         public static bool[] GetKeyboardState(KeyboardState state)
@@ -29,6 +27,22 @@ namespace Crispy.Scripts.Core
             }
 
             return result;
+        }
+
+        public static void HandleKeypress(Keys key, Action action)
+        {
+            if (!heldKeys.ContainsKey(key))
+                heldKeys.Add(key, false);
+
+            if (Keyboard.GetState().IsKeyDown(key) && !heldKeys[key])
+            {
+                action.Invoke();
+                heldKeys[key] = true;
+            }
+            else if (Keyboard.GetState().IsKeyUp(key))
+            {
+                heldKeys[key] = false;
+            }
         }
     }
 }
