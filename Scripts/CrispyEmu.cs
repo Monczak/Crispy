@@ -18,6 +18,8 @@ using Myra.Graphics2D.UI.File;
 
 using XNAssets.Utility;
 
+using Color = Microsoft.Xna.Framework.Color;
+
 namespace Crispy
 {
     public class CrispyEmu : Game
@@ -37,8 +39,6 @@ namespace Crispy
 
         private double timeSinceLastTimerUpdate;
 
-        private CPUState saveState;
-
         private List<Message> messages;
 
         private SpriteFont messageFont;
@@ -56,6 +56,8 @@ namespace Crispy
 
         private int savestateSlots = 6;
         private string readme;
+
+        private bool renderOnlyCHIP8 = false;
 
         private readonly Keys
             helpKey = Keys.F1,
@@ -175,11 +177,11 @@ namespace Crispy
             _spriteBatch.Begin();
 
             RenderCHIP8();
-            RenderMessages();
+            if (!renderOnlyCHIP8) RenderMessages();
 
             _spriteBatch.End();
 
-            Desktop.Render();
+            if (!renderOnlyCHIP8) Desktop.Render();
 
             cpu.drawFlag = false;
 
@@ -274,6 +276,28 @@ namespace Crispy
                 window.Content = scrollViewer;
 
                 window.ShowModal();
+            });
+
+            InputHandler.HandleKeypress(screenshotKey, () =>
+            {
+                string screenshotPath = $"Screenshots/{DateTime.Now.ToString().Replace("/", "-").Replace(":", "-")}.jpg";
+
+                if (!File.Exists(screenshotPath))
+                {
+                    try
+                    {
+                        File.Create(screenshotPath).Dispose();
+                    }
+                    catch (DirectoryNotFoundException)
+                    {
+                        Directory.CreateDirectory(Path.GetDirectoryName(screenshotPath));
+                    }
+                }
+
+                using (Texture2D screenshot = TakeScreenshot())
+                    SaveScreenshot(screenshot, File.OpenWrite(screenshotPath));
+
+                ShowMessage($"Saved screenshot as {Path.GetFileName(screenshotPath)}", 2.5f);
             });
         }
 
@@ -389,6 +413,28 @@ namespace Crispy
         private void RemoveAllMessages()
         {
             messages.Clear();
+        }
+
+        private Texture2D TakeScreenshot()
+        {
+            int width = _graphics.PreferredBackBufferWidth, height = _graphics.PreferredBackBufferHeight;
+
+            RenderTarget2D screenshot = new RenderTarget2D(GraphicsDevice, width, height);
+            GraphicsDevice.SetRenderTarget(screenshot);
+
+            renderOnlyCHIP8 = true;
+            Draw(new GameTime());
+            renderOnlyCHIP8 = false;
+
+            GraphicsDevice.SetRenderTarget(null);
+
+            return screenshot;
+        }
+
+        private void SaveScreenshot(Texture2D screenshot, Stream stream)
+        {
+            screenshot.SaveAsJpeg(stream, screenshot.Width, screenshot.Height);
+            stream.Close();
         }
     }
 }
