@@ -16,6 +16,8 @@ using Myra;
 using Myra.Graphics2D.UI;
 using Myra.Graphics2D.UI.File;
 
+using XNAssets.Utility;
+
 namespace Crispy
 {
     public class CrispyEmu : Game
@@ -53,6 +55,7 @@ namespace Crispy
         private FileDialog fileDialog;
 
         private int savestateSlots = 6;
+        private string readme;
 
         private readonly Keys
             helpKey = Keys.F1,
@@ -126,7 +129,7 @@ namespace Crispy
 
             SavestateManager.Initialize(savestateSlots);
 
-            ShowMessage("Welcome to Crispy! Press F3 to load a game.", 9999);
+            ShowMessage("Welcome to Crispy! Press F3 to load a game, or press F1 for help.", 9999);
 
             base.Initialize();
         }
@@ -136,6 +139,7 @@ namespace Crispy
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
             messageFont = Content.Load<SpriteFont>("MessageFont");
+            readme = typeof(CrispyEmu).Assembly.ReadResourceAsString("Readme.txt");
         }
 
         protected override void Update(GameTime gameTime)
@@ -248,6 +252,28 @@ namespace Crispy
                     SavestateManager.SelectPreviousSlot();
                     ShowMessage($"Selected slot {SavestateManager.selectedSlot} {(SavestateManager.IsSelectedSlotEmpty() ? "(empty)" : "")}", 2.5f);
                 }
+            });
+
+            InputHandler.HandleKeypress(helpKey, () =>
+            {
+                Window window = new Window
+                {
+                    Title = "Welcome to Crispy!"
+                };
+                Label text = new Label
+                {
+                    Text = readme,
+                    VerticalAlignment = VerticalAlignment.Stretch,
+                    Wrap = true
+                };
+                ScrollViewer scrollViewer = new ScrollViewer
+                {
+                    Content = text
+                };
+
+                window.Content = scrollViewer;
+
+                window.ShowModal();
             });
         }
 

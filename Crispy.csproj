@@ -38,4 +38,8 @@
     <PackageReference Include="NAudio" Version="1.10.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Readme.txt"/>
+  </ItemGroup>
+
 </Project>
