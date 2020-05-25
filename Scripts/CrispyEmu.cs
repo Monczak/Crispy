@@ -46,6 +46,7 @@ namespace Crispy
 
         private bool isPaused;
         private bool isRunning;
+        private bool frameAdvance = false;
 
         private string currentRomPath;
         private string currentRomName;
@@ -71,6 +72,7 @@ namespace Crispy
             nextSaveStateSlotKey = Keys.F6,
             loadStateKey = Keys.F7,
             saveStateKey = Keys.F8,
+            frameAdvanceKey = Keys.F9,
             pauseKey = Keys.Space;
 
         public CrispyEmu()
@@ -159,18 +161,20 @@ namespace Crispy
                 if (!isPaused)
                 {
                     cpu.Cycle();
+                    if (frameAdvance && cpu.drawFlag) isPaused = true;
                     HandleTimers(gameTime);
                 }
 
                 HandleAudio();
                 HandleSavestates();
                 HandlePause();
+                HandleFrameAdvance();
             }
 
             HandleFunctionKeys();
             HandleMessages(gameTime);
 
-            SetTitle($"{currentRomName}{(cpu.infiniteLoopFlag ? " (stopped running)" : "")}");
+            SetTitle($"{currentRomName}{(frameAdvance ? " (frame advance) " : "")}{(cpu.infiniteLoopFlag ? " (stopped running)" : "")}");
 
             base.Update(gameTime);
         }
@@ -191,6 +195,17 @@ namespace Crispy
             cpu.drawFlag = false;
 
             base.Draw(gameTime);
+        }
+
+        private void HandleFrameAdvance()
+        {
+            InputHandler.HandleKeypress(frameAdvanceKey, () =>
+            {
+                if (!frameAdvance) ShowMessage("Frame advance", 2.5f);
+
+                frameAdvance = true;
+                isPaused = false;
+            });
         }
 
         private void HandleFunctionKeys()
@@ -385,7 +400,13 @@ namespace Crispy
         {
             InputHandler.HandleKeypress(pauseKey, () =>
             {
-                TogglePause();
+                if (frameAdvance)
+                {
+                    frameAdvance = false;
+                    isPaused = false;
+                }
+                else 
+                    TogglePause();
                 ShowMessage(isPaused ? "Paused emulation" : "Unpaused emulation", 2.5f);
             });
         }
