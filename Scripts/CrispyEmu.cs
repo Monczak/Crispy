@@ -51,8 +51,11 @@ namespace Crispy
         private string currentRomName;
         private byte[] currentRom;
 
-        private bool fileDialogVisible = false;
         private FileDialog fileDialog;
+        private Window helpMenu;
+
+        private bool fileDialogVisible = false;
+        private bool helpMenuVisible = false;
 
         private int savestateSlots = 6;
         private string readme;
@@ -167,6 +170,8 @@ namespace Crispy
             HandleFunctionKeys();
             HandleMessages(gameTime);
 
+            SetTitle($"{currentRomName}{(cpu.infiniteLoopFlag ? " (stopped running)" : "")}");
+
             base.Update(gameTime);
         }
 
@@ -192,7 +197,7 @@ namespace Crispy
         {
             InputHandler.HandleKeypress(loadRomKey, () =>
             {
-                if (!fileDialogVisible)
+                if (!fileDialogVisible && !helpMenuVisible)
                 {
                     fileDialog = new FileDialog(FileDialogMode.OpenFile)
                     {
@@ -222,9 +227,10 @@ namespace Crispy
                     fileDialog.ShowModal();
                     fileDialogVisible = true;
                 }
-                else
+                else if (fileDialogVisible)
                 {
                     fileDialog.Close();
+                    fileDialogVisible = false;
                 }
                 
             });
@@ -258,24 +264,34 @@ namespace Crispy
 
             InputHandler.HandleKeypress(helpKey, () =>
             {
-                Window window = new Window
+                if (!helpMenuVisible && !fileDialogVisible)
                 {
-                    Title = "Welcome to Crispy!"
-                };
-                Label text = new Label
-                {
-                    Text = readme,
-                    VerticalAlignment = VerticalAlignment.Stretch,
-                    Wrap = true
-                };
-                ScrollViewer scrollViewer = new ScrollViewer
-                {
-                    Content = text
-                };
+                    helpMenu = new Window
+                    {
+                        Title = "Welcome to Crispy!"
+                    };
+                    Label text = new Label
+                    {
+                        Text = readme,
+                        VerticalAlignment = VerticalAlignment.Stretch,
+                        Wrap = true
+                    };
+                    ScrollViewer scrollViewer = new ScrollViewer
+                    {
+                        Content = text
+                    };
 
-                window.Content = scrollViewer;
+                    helpMenu.Content = scrollViewer;
 
-                window.ShowModal();
+                    helpMenu.ShowModal();
+                    helpMenuVisible = true;
+                }
+                else if (helpMenuVisible)
+                {
+                    helpMenu.Close();
+                    helpMenuVisible = false;
+                }
+                
             });
 
             InputHandler.HandleKeypress(screenshotKey, () =>
@@ -435,6 +451,14 @@ namespace Crispy
         {
             screenshot.SaveAsJpeg(stream, screenshot.Width, screenshot.Height);
             stream.Close();
+        }
+
+        private void SetTitle(string title)
+        {
+            if (title == null || title == "")
+                Window.Title = "Crispy";
+            else
+                Window.Title = $"Crispy - {title}";
         }
     }
 }

@@ -33,6 +33,8 @@ namespace Crispy.Scripts.Core
 
         public bool drawFlag;           // Set whenever to update the screen
 
+        public bool infiniteLoopFlag;   // Set whenever the CPU executes an instruction that jumps to itself
+
         private Random random;
 
         private readonly byte[] fontSet = new byte[80]
@@ -104,6 +106,8 @@ namespace Crispy.Scripts.Core
 
         private void ExecuteOpcode()
         {
+            infiniteLoopFlag = false;
+
             switch (opcode & 0xF000)
             {
                 case 0x0000:
@@ -364,6 +368,7 @@ namespace Crispy.Scripts.Core
         private void Opcode_JumpToAddress(ushort address)
         {
             programCounter = address;
+            if (opcode == (ushort)(memory[programCounter] << 8 | memory[programCounter + 1])) infiniteLoopFlag = true;
         }
 
         // Call subroutine at address (0x2NNN)
@@ -371,6 +376,7 @@ namespace Crispy.Scripts.Core
         {
             stack[stackPointer] = programCounter;
             stackPointer++;
+            if (stackPointer > 15) throw new StackOverflowException();
             programCounter = address;
         }
 
