@@ -174,7 +174,7 @@ namespace Crispy
             HandleFunctionKeys();
             HandleMessages(gameTime);
 
-            SetTitle($"{currentRomName}{(frameAdvance ? " (frame advance) " : "")}{(cpu.infiniteLoopFlag ? " (stopped running)" : "")}");
+            SetTitle($"{currentRomName}{(frameAdvance ? $" (frame advance{(!isPaused ? ", running" : "")}) " : "")}{(cpu.infiniteLoopFlag ? " (stopped running)" : "")}");
 
             base.Update(gameTime);
         }
@@ -201,7 +201,7 @@ namespace Crispy
         {
             InputHandler.HandleKeypress(frameAdvanceKey, () =>
             {
-                if (!frameAdvance) ShowMessage("Frame advance", 2.5f);
+                if (!frameAdvance) ShowMessage("Frame advance on", 2.5f);
 
                 frameAdvance = true;
                 isPaused = false;
@@ -404,10 +404,13 @@ namespace Crispy
                 {
                     frameAdvance = false;
                     isPaused = false;
+                    ShowMessage("Frame advance off", 2.5f);
                 }
-                else 
+                else
+                {
                     TogglePause();
-                ShowMessage(isPaused ? "Paused emulation" : "Unpaused emulation", 2.5f);
+                    ShowMessage(isPaused ? "Paused emulation" : "Unpaused emulation", 2.5f);
+                }
             });
         }
 

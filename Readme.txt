@@ -28,4 +28,5 @@ Crispy provides 6 savestate slots for each program. They are saved to the Savest
 -- FRAME ADVANCE --
 
 When frame advance is on (after pressing F9), Crispy waits for the next draw call and then pauses the emulation. Pressing F9 again will run the program until the next draw call.
+Frame advance does not pause the emulator - the CPU may spin or wait for a keypress. Frame advance in Crispy only pauses the emulation when something is drawn to the screen.
 To resume normal execution, unpause the emulator by pressing Space.
