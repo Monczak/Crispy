@@ -36,8 +36,12 @@ namespace Crispy
 
         private uint cyclesPerSecond = 500;
         private uint timerUpdatesPerSecond = 60;
+        private uint rewindFrequency = 60;
+
+        private int rewindBufferSize = 600;
 
         private double timeSinceLastTimerUpdate;
+        private double timeSinceLastRewindCycle;
 
         private List<Message> messages;
 
@@ -46,6 +50,7 @@ namespace Crispy
 
         private bool isPaused;
         private bool isRunning;
+        private bool isRewinding;
         private bool frameAdvance = false;
 
         private string currentRomPath;
@@ -73,6 +78,7 @@ namespace Crispy
             loadStateKey = Keys.F7,
             saveStateKey = Keys.F8,
             frameAdvanceKey = Keys.F9,
+            rewindKey = Keys.OemTilde,
             pauseKey = Keys.Space;
 
         public CrispyEmu()
@@ -136,6 +142,8 @@ namespace Crispy
 
             SavestateManager.Initialize(savestateSlots);
 
+            RewindManager.Initialize(rewindBufferSize);
+
             ShowMessage("Welcome to Crispy! Press F3 to load a game, or press F1 for help.", 9999);
 
             base.Initialize();
@@ -158,7 +166,7 @@ namespace Crispy
 
             if (isRunning)
             {
-                if (!isPaused)
+                if (!isPaused && !isRewinding)
                 {
                     cpu.Cycle();
                     if (frameAdvance && cpu.drawFlag) isPaused = true;
@@ -169,6 +177,7 @@ namespace Crispy
                 HandleSavestates();
                 HandlePause();
                 HandleFrameAdvance();
+                HandleRewind(gameTime);
             }
 
             HandleFunctionKeys();
@@ -195,6 +204,28 @@ namespace Crispy
             cpu.drawFlag = false;
 
             base.Draw(gameTime);
+        }
+
+        private void HandleRewind(GameTime gameTime)
+        {
+            if (timeSinceLastRewindCycle > 1.0 / rewindFrequency)
+            {
+                timeSinceLastRewindCycle = 0;
+                if (Keyboard.GetState().IsKeyDown(rewindKey))
+                {
+                    isRewinding = true;
+                    cpu.ApplyState(RewindManager.Rewind());
+                }
+                else
+                {
+                    isRewinding = false;
+                    if (!frameAdvance && !isPaused)
+                    {
+                        RewindManager.Record(cpu.GetState());
+                    }
+                }
+            }
+            else timeSinceLastRewindCycle += gameTime.ElapsedGameTime.TotalSeconds; 
         }
 
         private void HandleFrameAdvance()
