@@ -92,6 +92,8 @@ namespace Crispy
         {
             MyraEnvironment.Game = this;
 
+            LoadConfig();
+
             messages = new List<Message>();
 
             _graphics.PreferredBackBufferWidth = 640;
@@ -204,6 +206,25 @@ namespace Crispy
             cpu.drawFlag = false;
 
             base.Draw(gameTime);
+        }
+
+        private void LoadConfig()
+        {
+            try
+            {
+                Config config = ConfigReader.Read("Config.json");
+
+                cyclesPerSecond = config.CyclesPerSecond;
+                timerUpdatesPerSecond = config.TimerUpdatesPerSecond;
+                rewindBufferSize = config.RewindBufferSize;
+                rewindFrequency = config.RewindFrequency;
+                savestateSlots = config.SavestateSlots;
+            }
+            catch (Exception)
+            {
+                ConfigReader.Save("Config.json", new Config());
+            }
+            
         }
 
         private void HandleRewind(GameTime gameTime)

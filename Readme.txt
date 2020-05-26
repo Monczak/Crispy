@@ -22,9 +22,22 @@ F9 - frame advance
 ` (grave key) - rewind
 Esc - close the emulator
 
+-- CONFIGURATION --
+
+In the Config.json file, located in the same place as the executable, there are a few configurable options.
+
+CyclesPerSecond - how often the emulator executes one cycle of the virtual CPU. Default is 500.
+TimerUpdatesPerSecond - how often the delay timer and sound timer count down. Default is 60.
+RewindFrequency - how often per second a new rewind state is created. Default is 60.
+RewindBufferSize - how many rewind states can be stored. The higher this number, the further the emulator can rewind. Default is 600.
+SavestateSlots - how many savestate slots are provided for each program. Default is 6.
+
+If there is no Config.json file or if the Config.json file is malformed or contains invalid data, Crispy will launch with the default settings and create a new Config.json file.
+
 -- SAVESTATES --
 
-Crispy provides 6 savestate slots for each program. They are saved to the Savestates folder.
+By default, Crispy provides 6 savestate slots for each program. They are saved to the Savestates folder.
+Savestates can be loaded with F7 and saved with F8. Pressing F5 and F6 will scroll through the available savestate slots, selecting the previous one and the next one respectively.
 
 -- FRAME ADVANCE --
 
