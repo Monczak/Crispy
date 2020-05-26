@@ -5,7 +5,7 @@ using System.Text;
 namespace Crispy.Scripts.Core
 {
     [Serializable]
-    public struct CPUState
+    public class CPUState
     {
         public byte[] memory;           // 4K RAM
 
