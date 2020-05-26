@@ -31,6 +31,8 @@ TimerUpdatesPerSecond - how often the delay timer and sound timer count down. De
 RewindFrequency - how often per second a new rewind state is created. Default is 60.
 RewindBufferSize - how many rewind states can be stored. The higher this number, the further the emulator can rewind. Default is 600.
 SavestateSlots - how many savestate slots are provided for each program. Default is 6.
+OnColor - the color of a lit pixel, expressed by a hex string (#RRGGBB). Default is #414234.
+OffColor - the color of an unlit pixel, expressed by a hex string (#RRGGBB). Default is #bac2ac.
 
 If there is no Config.json file or if the Config.json file is malformed or contains invalid data, Crispy will launch with the default settings and create a new Config.json file.
 

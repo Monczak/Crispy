@@ -101,9 +101,6 @@ namespace Crispy
 
             _graphics.ApplyChanges();
 
-            offColor = new Color(186, 194, 172);
-            onColor = new Color(65, 66, 52);
-
             isPaused = false;
             isRunning = false;
 
@@ -219,10 +216,16 @@ namespace Crispy
                 rewindBufferSize = config.RewindBufferSize;
                 rewindFrequency = config.RewindFrequency;
                 savestateSlots = config.SavestateSlots;
+
+                offColor = ColorTranslator.FromHexString(config.OffColor);
+                onColor = ColorTranslator.FromHexString(config.OnColor);
             }
             catch (Exception)
             {
                 ConfigReader.Save("Config.json", new Config());
+
+                offColor = ColorTranslator.FromHexString("#414234");
+                onColor = ColorTranslator.FromHexString("#bac2ac");
             }
             
         }

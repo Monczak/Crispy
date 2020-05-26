@@ -1,4 +1,6 @@
-﻿namespace Crispy.Scripts.Core
+﻿using Microsoft.Xna.Framework;
+
+namespace Crispy.Scripts.Core
 {
     public class Config
     {
@@ -10,6 +12,9 @@
 
         public int SavestateSlots { get; set; }
 
+        public string OnColor { get; set; }
+        public string OffColor { get; set; }
+
         public Config()
         {
             CyclesPerSecond = 500;
@@ -18,6 +23,9 @@
             RewindBufferSize = 600;
 
             SavestateSlots = 6;
+
+            OffColor = "#bac2ac";
+            OnColor = "#414234";
         }
     }
 }
