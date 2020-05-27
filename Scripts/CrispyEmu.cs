@@ -224,8 +224,8 @@ namespace Crispy
             {
                 ConfigReader.Save("Config.json", new Config());
 
-                offColor = ColorTranslator.FromHexString("#414234");
-                onColor = ColorTranslator.FromHexString("#bac2ac");
+                onColor = ColorTranslator.FromHexString("#414234");
+                offColor = ColorTranslator.FromHexString("#bac2ac");
             }
             
         }
