@@ -288,6 +288,7 @@ namespace Crispy
                         currentRomName = Path.GetFileNameWithoutExtension(currentRomPath);
                         SavestateManager.romName = currentRomName;
                         cpu.LoadProgram(currentRom);
+                        RewindManager.Initialize(rewindBufferSize);
 
                         isRunning = true;
                         RemoveAllMessages();
@@ -352,6 +353,11 @@ namespace Crispy
                     };
 
                     helpMenu.Content = scrollViewer;
+
+                    helpMenu.Closed += (s, a) =>
+                    {
+                        helpMenuVisible = false;
+                    };
 
                     helpMenu.ShowModal();
                     helpMenuVisible = true;

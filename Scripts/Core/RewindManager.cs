@@ -17,6 +17,7 @@ namespace Crispy.Scripts.Core
         {
             ringBuffer = new CPUState[bufferSize];
             bufferPos = 0;
+            recordedStates = 0;
         }
 
         public static void Record(CPUState state)
