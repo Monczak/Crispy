@@ -1,6 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-
-namespace Crispy.Scripts.Core
+﻿namespace Crispy.Scripts.Core
 {
     public class Config
     {

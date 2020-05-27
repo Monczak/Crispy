@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Crispy.Scripts.Core
 {
@@ -626,7 +624,7 @@ namespace Crispy.Scripts.Core
             byte digit = registers[register];
             indexRegister = unchecked((ushort)(0x50 + (5 * digit)));
         }
-        
+
         // Store BCD representation of VX in memory locations I, I + 1 and I + 2 (0xFX33)
         private void Opcode_StoreBCD(byte register)
         {

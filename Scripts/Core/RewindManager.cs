@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Crispy.Scripts.Core
+﻿namespace Crispy.Scripts.Core
 {
     public class RewindManager
     {
@@ -41,7 +37,7 @@ namespace Crispy.Scripts.Core
             if (bufferPos == -1) bufferPos = ringBuffer.Length - 1;
             if (bufferPos == rewindBufferStartPos || recordedStates == 0) bufferPos++;
             if (bufferPos == ringBuffer.Length) bufferPos--;
-            
+
             return ringBuffer[bufferPos];
         }
     }

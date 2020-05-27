@@ -1,23 +1,15 @@
-﻿using Microsoft.Xna.Framework;
+﻿using Crispy.Scripts.Core;
+using Crispy.Scripts.GUI;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-
-using System;
-using System.Threading;
-using System.IO;
-using System.Diagnostics;
-using System.Collections;
-using System.Collections.Generic;
-
-using Crispy.Scripts.Core;
-using Crispy.Scripts.GUI;
-
 using Myra;
 using Myra.Graphics2D.UI;
 using Myra.Graphics2D.UI.File;
-
+using System;
+using System.Collections.Generic;
+using System.IO;
 using XNAssets.Utility;
-
 using Color = Microsoft.Xna.Framework.Color;
 
 namespace Crispy
@@ -227,7 +219,7 @@ namespace Crispy
                 onColor = ColorTranslator.FromHexString("#414234");
                 offColor = ColorTranslator.FromHexString("#bac2ac");
             }
-            
+
         }
 
         private void HandleRewind(GameTime gameTime)
@@ -309,10 +301,10 @@ namespace Crispy
                     fileDialog.Close();
                     fileDialogVisible = false;
                 }
-                
+
             });
 
-            InputHandler.HandleKeypress(resetKey, () => 
+            InputHandler.HandleKeypress(resetKey, () =>
             {
                 if (isRunning && !helpMenuVisible && !fileDialogVisible)
                 {
@@ -373,7 +365,7 @@ namespace Crispy
                     helpMenu.Close();
                     helpMenuVisible = false;
                 }
-                
+
             });
 
             InputHandler.HandleKeypress(screenshotKey, () =>
