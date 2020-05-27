@@ -232,34 +232,40 @@ namespace Crispy
 
         private void HandleRewind(GameTime gameTime)
         {
-            if (timeSinceLastRewindCycle > 1.0 / rewindFrequency)
+            if (!helpMenuVisible && !fileDialogVisible)
             {
-                timeSinceLastRewindCycle = 0;
-                if (Keyboard.GetState().IsKeyDown(rewindKey))
+                if (timeSinceLastRewindCycle > 1.0 / rewindFrequency)
                 {
-                    isRewinding = true;
-                    cpu.ApplyState(RewindManager.Rewind());
-                }
-                else
-                {
-                    isRewinding = false;
-                    if (!frameAdvance && !isPaused)
+                    timeSinceLastRewindCycle = 0;
+                    if (Keyboard.GetState().IsKeyDown(rewindKey))
                     {
-                        RewindManager.Record(cpu.GetState());
+                        isRewinding = true;
+                        cpu.ApplyState(RewindManager.Rewind());
+                    }
+                    else
+                    {
+                        isRewinding = false;
+                        if (!frameAdvance && !isPaused)
+                        {
+                            RewindManager.Record(cpu.GetState());
+                        }
                     }
                 }
+                else timeSinceLastRewindCycle += gameTime.ElapsedGameTime.TotalSeconds;
             }
-            else timeSinceLastRewindCycle += gameTime.ElapsedGameTime.TotalSeconds; 
         }
 
         private void HandleFrameAdvance()
         {
             InputHandler.HandleKeypress(frameAdvanceKey, () =>
             {
-                if (!frameAdvance) ShowMessage("Frame advance on", 2.5f);
+                if (!helpMenuVisible && !fileDialogVisible)
+                {
+                    if (!frameAdvance) ShowMessage("Frame advance on", 2.5f);
 
-                frameAdvance = true;
-                isPaused = false;
+                    frameAdvance = true;
+                    isPaused = false;
+                }
             });
         }
 
@@ -308,7 +314,7 @@ namespace Crispy
 
             InputHandler.HandleKeypress(resetKey, () => 
             {
-                if (isRunning)
+                if (isRunning && !helpMenuVisible && !fileDialogVisible)
                 {
                     cpu.Reset();
                     cpu.LoadProgram(currentRom);
@@ -318,7 +324,7 @@ namespace Crispy
 
             InputHandler.HandleKeypress(nextSaveStateSlotKey, () =>
             {
-                if (isRunning)
+                if (isRunning && !helpMenuVisible && !fileDialogVisible)
                 {
                     SavestateManager.SelectNextSlot();
                     ShowMessage($"Selected slot {SavestateManager.selectedSlot} {(SavestateManager.IsSelectedSlotEmpty() ? "(empty)" : "")}", 2.5f);
@@ -326,7 +332,7 @@ namespace Crispy
             });
             InputHandler.HandleKeypress(previousSaveStateSlotKey, () =>
             {
-                if (isRunning)
+                if (isRunning && !helpMenuVisible && !fileDialogVisible)
                 {
                     SavestateManager.SelectPreviousSlot();
                     ShowMessage($"Selected slot {SavestateManager.selectedSlot} {(SavestateManager.IsSelectedSlotEmpty() ? "(empty)" : "")}", 2.5f);
@@ -372,24 +378,27 @@ namespace Crispy
 
             InputHandler.HandleKeypress(screenshotKey, () =>
             {
-                string screenshotPath = $"Screenshots/{DateTime.Now.ToString().Replace("/", "-").Replace(":", "-")}.jpg";
-
-                if (!File.Exists(screenshotPath))
+                if (!helpMenuVisible && !fileDialogVisible)
                 {
-                    try
+                    string screenshotPath = $"Screenshots/{DateTime.Now.ToString().Replace("/", "-").Replace(":", "-")}.jpg";
+
+                    if (!File.Exists(screenshotPath))
                     {
-                        File.Create(screenshotPath).Dispose();
+                        try
+                        {
+                            File.Create(screenshotPath).Dispose();
+                        }
+                        catch (DirectoryNotFoundException)
+                        {
+                            Directory.CreateDirectory(Path.GetDirectoryName(screenshotPath));
+                        }
                     }
-                    catch (DirectoryNotFoundException)
-                    {
-                        Directory.CreateDirectory(Path.GetDirectoryName(screenshotPath));
-                    }
+
+                    using (Texture2D screenshot = TakeScreenshot())
+                        SaveScreenshot(screenshot, File.OpenWrite(screenshotPath));
+
+                    ShowMessage($"Saved screenshot as {Path.GetFileName(screenshotPath)}", 2.5f);
                 }
-
-                using (Texture2D screenshot = TakeScreenshot())
-                    SaveScreenshot(screenshot, File.OpenWrite(screenshotPath));
-
-                ShowMessage($"Saved screenshot as {Path.GetFileName(screenshotPath)}", 2.5f);
             });
         }
 
@@ -433,7 +442,7 @@ namespace Crispy
         {
             InputHandler.HandleKeypress(saveStateKey, () =>
             {
-                if (isRunning)
+                if (isRunning && !helpMenuVisible && !fileDialogVisible)
                 {
                     SavestateManager.Savestate(SavestateManager.selectedSlot, cpu.GetState());
                     ShowMessage($"Saved state to slot {SavestateManager.selectedSlot}", 2.5f);
@@ -441,7 +450,7 @@ namespace Crispy
             });
             InputHandler.HandleKeypress(loadStateKey, () =>
             {
-                if (isRunning)
+                if (isRunning && !helpMenuVisible && !fileDialogVisible)
                 {
                     try
                     {
@@ -461,16 +470,19 @@ namespace Crispy
         {
             InputHandler.HandleKeypress(pauseKey, () =>
             {
-                if (frameAdvance)
+                if (!helpMenuVisible && !fileDialogVisible)
                 {
-                    frameAdvance = false;
-                    isPaused = false;
-                    ShowMessage("Frame advance off", 2.5f);
-                }
-                else
-                {
-                    TogglePause();
-                    ShowMessage(isPaused ? "Paused emulation" : "Unpaused emulation", 2.5f);
+                    if (frameAdvance)
+                    {
+                        frameAdvance = false;
+                        isPaused = false;
+                        ShowMessage("Frame advance off", 2.5f);
+                    }
+                    else
+                    {
+                        TogglePause();
+                        ShowMessage(isPaused ? "Paused emulation" : "Unpaused emulation", 2.5f);
+                    }
                 }
             });
         }
